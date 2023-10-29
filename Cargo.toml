@@ -10,4 +10,5 @@ clap = "4.4.7"
 swc_common = "0.33.2"
 swc_ecma_ast = "0.110.2"
 swc_ecma_parser = "0.141.5"
+colored = "2.0.4"
 
