@@ -1,0 +1,9 @@
+{
+  "name": "wasm-grate",
+  "version": "0.1.1",
+  "description": "A tool to analyze JS projects for potential WebAssembly migration points.",
+  "main": "index.js",
+  "bin": {
+    "wasm-grate": "./target/release/wasm-grate"
+  }
+}
