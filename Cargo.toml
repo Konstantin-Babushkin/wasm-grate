@@ -1,6 +1,6 @@
 [package]
 name = "wasm-grate"
-version = "0.1.22"
+version = "0.1.23"
 edition = "2021"
 description = "Analyzes JS projects for potential WebAssembly migration points."
 license = "ISC"

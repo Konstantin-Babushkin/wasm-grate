@@ -9,7 +9,7 @@ pub mod parsing {
     use swc_common::source_map::SourceMap;
     use swc_ecma_parser::{Parser, Syntax};
     use swc_ecma_ast::{Decl, Expr, Module, ModuleDecl, ModuleItem, Stmt};
-    use swc_ecma_ast::Prop::Method;
+    use swc_ecma_ast::ClassMember::Method;
     use crate::analytics;
     use crate::common::function_like::FunctionLike;
 
