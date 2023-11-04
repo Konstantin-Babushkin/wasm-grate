@@ -8,8 +8,10 @@ pub mod parsing {
     use swc_common::input::StringInput;
     use swc_common::source_map::SourceMap;
     use swc_ecma_parser::{Parser, Syntax};
-    use swc_ecma_ast::{Decl, FnDecl, Function, Module, ModuleItem, Stmt};
+    use swc_ecma_ast::{Decl, Expr, Module, ModuleDecl, ModuleItem, Stmt};
+    use swc_ecma_ast::Prop::Method;
     use crate::analytics;
+    use crate::common::function_like::FunctionLike;
 
 
     pub fn process_input<P: AsRef<Path>>(path: P) {
@@ -57,22 +59,49 @@ pub mod parsing {
         // Parse the source code into an AST
         let module = parser.parse_module().expect("Failed to parse module");
 
-        // Extract and analyze functions
-        let functions = _extract_functions(&module);
-        if functions.is_empty() {
+        // Extract and analyze function-like constructs
+        let function_likes = _extract_function_likes(&module);
+        if function_likes.is_empty() {
             return;
         }
-        analytics::do_analytics(functions, &source_map);
+        analytics::do_analytics(function_likes, &source_map);
     }
 
-    fn _extract_functions(module: &Module) -> Vec<(&FnDecl, &Box<Function>)> {
-        let mut functions = Vec::new();
+    fn _extract_function_likes(module: &Module) -> Vec<FunctionLike> {
+        let mut function_likes = Vec::new();
+
         for item in &module.body {
-            if let ModuleItem::Stmt(Stmt::Decl(Decl::Fn(func_decl))) = item {
-                functions.push((func_decl, &func_decl.function));
+            match item {
+                // handle functions
+                ModuleItem::Stmt(Stmt::Decl(Decl::Fn(fn_decl))) => {
+                    function_likes.push(FunctionLike::FunctionDecl(fn_decl));
+                },
+                // handle function expressions and arrow functions
+                ModuleItem::Stmt(Stmt::Expr(expr_stmt)) => {
+                    match &*expr_stmt.expr {
+                        Expr::Fn(fn_expr) => function_likes.push(FunctionLike::FunctionExpr(fn_expr)),
+                        Expr::Arrow(arrow_expr) => function_likes.push(FunctionLike::ArrowFunction(arrow_expr)),
+                        _ => {}
+                    }
+                },
+                // handle function declarations
+                ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) => {
+                    if let Decl::Fn(fn_decl) = &export_decl.decl {
+                        function_likes.push(FunctionLike::FunctionDecl(fn_decl));
+                    }
+                },
+                // handle Class methods
+                ModuleItem::Stmt(Stmt::Decl(Decl::Class(class_decl))) => {
+                    for member in &class_decl.class.body {
+                        if let Method(method_prop) = member {
+                            function_likes.push(FunctionLike::Method(method_prop));
+                        }
+                    }
+                },
+                _ => {}
             }
-            // You can also handle FunctionExpr and ArrowFunc here if needed
         }
-        functions
+
+        function_likes
     }
 }

@@ -4,6 +4,7 @@ use clap::{Arg, ArgAction, Command};
 
 mod parsing;
 mod analytics;
+mod common;
 
 fn main() {
     let cmd = Command::new("wasm-grate")
