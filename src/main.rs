@@ -7,7 +7,7 @@ mod analytics;
 
 fn main() {
     let cmd = Command::new("wasm-grate")
-        .version("0.1.20")
+        .version("0.1.21")
         .author("Konstantin Babushkin: constant.babushkin@gmail.com")
         .about("Analyzes JS projects for potential WebAssembly migration points.")
         .arg(
