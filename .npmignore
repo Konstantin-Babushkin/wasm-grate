@@ -5,6 +5,7 @@
 /target/release/examples
 /target/release/incremental
 /target/release/.fingerprint
+/.idea
 .gitignore
 Cargo.lock
 Cargo.toml
