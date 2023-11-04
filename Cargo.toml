@@ -1,7 +1,9 @@
 [package]
 name = "wasm-grate"
-version = "0.1.21"
+version = "0.1.22"
 edition = "2021"
+description = "Analyzes JS projects for potential WebAssembly migration points."
+license = "ISC"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
