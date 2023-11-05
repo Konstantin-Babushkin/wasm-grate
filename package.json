@@ -1,6 +1,6 @@
 {
   "name": "wasm-grate",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Analyzes JS projects for potential WebAssembly migration points.",
   "main": "start.js",
   "directories": {
