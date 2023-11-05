@@ -8,12 +8,10 @@ pub mod parsing {
     use swc_common::input::StringInput;
     use swc_common::source_map::SourceMap;
     use swc_ecma_parser::{Parser, Syntax};
-    use swc_ecma_ast::{Decl, Expr, Module, ModuleDecl, ModuleItem, PropOrSpread, Stmt};
+    use swc_ecma_ast::{Decl, Prop, Expr, ModuleDecl, ModuleItem, PropOrSpread, Stmt, VarDecl};
     use swc_ecma_ast::ClassMember::Method;
-    use swc_ecma_ast::Prop;
     use crate::analytics;
     use crate::common::function_like::FunctionLike;
-    use crate::common::PropMethod;
 
 
     pub fn process_input<P: AsRef<Path>>(path: P) {
@@ -61,47 +59,34 @@ pub mod parsing {
         // Parse the source code into an AST
         let module = parser.parse_module().expect("Failed to parse module");
 
-        // Extract and analyze function-like constructs
-        // let function_likes = _extract_function_likes(&copy_module);
+        // Extract functions from the module
         let mut function_likes = Vec::new();
-        _extract_function_likes_from_module(&module.body, &mut function_likes);
+        _extract_functions(&module.body, &mut function_likes);
         if function_likes.is_empty() {
             return;
         }
         analytics::do_analytics(function_likes, &source_map);
     }
 
-    fn _extract_function_likes(module: &Module) -> Vec<FunctionLike> {
-        let mut function_likes = Vec::new();
-        _extract_function_likes_from_module(&module.body, &mut function_likes);
-        function_likes
-    }
-
-    fn _extract_function_likes_from_module<'a>(items: &'a [ModuleItem], function_likes: &mut Vec<FunctionLike<'a>>) {
+    fn _extract_functions<'a>(items: &'a [ModuleItem], function_likes: &mut Vec<FunctionLike<'a>>) {
         for item in items {
             match item {
                 ModuleItem::Stmt(Stmt::Decl(Decl::Fn(fn_decl))) => {
                     function_likes.push(FunctionLike::FunctionDecl(fn_decl));
+                },
+                ModuleItem::Stmt(Stmt::Decl(Decl::Var(var_decl))) => {
+                    _extract_functions_from_var(var_decl, function_likes);
                 },
                 ModuleItem::Stmt(Stmt::Expr(expr_stmt)) => {
                     _extract_function_likes_from_expr(&expr_stmt.expr, function_likes);
                 },
                 ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) => {
                     match &export_decl.decl {
+                        Decl::Fn(fn_decl) => {
+                            function_likes.push(FunctionLike::FunctionDecl(fn_decl));
+                        },
                         Decl::Var(var_decl) => {
-                            for declarator in &var_decl.decls {
-                                if let Some(init) = &declarator.init {
-                                    match &**init {
-                                        Expr::Fn(fn_expr) => {
-                                            function_likes.push(FunctionLike::FunctionExpr(fn_expr));
-                                        },
-                                        Expr::Arrow(arrow_expr) => {
-                                            function_likes.push(FunctionLike::ArrowFunction(arrow_expr));
-                                        },
-                                        _ => {}
-                                    }
-                                }
-                            }
+                            _extract_functions_from_var(var_decl, function_likes);
                         },
                         _ => {}
                     }
@@ -114,6 +99,22 @@ pub mod parsing {
                     }
                 },
                 _ => {}
+            }
+        }
+    }
+
+    fn _extract_functions_from_var<'a>(var_decl: &'a VarDecl, function_likes: &mut Vec<FunctionLike<'a>>) {
+        for declarator in &var_decl.decls {
+            if let Some(init) = &declarator.init {
+                match &**init {
+                    Expr::Fn(fn_expr) => {
+                        function_likes.push(FunctionLike::FunctionExpr(fn_expr));
+                    },
+                    Expr::Arrow(arrow_expr) => {
+                        function_likes.push(FunctionLike::ArrowFunction(arrow_expr));
+                    },
+                    _ => {}
+                }
             }
         }
     }
@@ -138,7 +139,7 @@ pub mod parsing {
                         PropOrSpread::Prop(boxed_prop) => {
                             match &**boxed_prop {
                                 Prop::Method(method_prop) => {
-                                    function_likes.push(PropMethod(method_prop));
+                                    function_likes.push(FunctionLike::PropMethod(method_prop));
                                 },
                                 Prop::KeyValue(key_value_prop) => {
                                     _extract_function_likes_from_expr(&key_value_prop.value, function_likes);
@@ -150,7 +151,6 @@ pub mod parsing {
                     }
                 }
             },
-            // Add more cases as needed to handle other expression types that may contain functions
             _ => {}
         }
     }
