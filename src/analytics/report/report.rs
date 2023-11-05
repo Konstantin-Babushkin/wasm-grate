@@ -4,7 +4,7 @@ pub mod report {
     use colored::{Color, Colorize};
     use swc_common::{FileName, SourceMap};
     use crate::analytics::THRESHOLD;
-    use crate::common::function_like::FunctionLike;
+    use crate::common::function_like_enum::FunctionLike;
 
     pub fn report_function(
         function_like: FunctionLike,

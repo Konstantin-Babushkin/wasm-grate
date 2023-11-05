@@ -1,6 +1,6 @@
 pub mod extract_functions {
     use swc_ecma_ast::{Decl, Prop, Expr, ModuleDecl, ModuleItem, PropOrSpread, Stmt, VarDecl, ClassDecl, CallExpr, ObjectLit, ClassMember};
-    use crate::common::function_like::FunctionLike;
+    use crate::common::function_like_enum::FunctionLike;
 
     pub fn extract_functions<'a>(items: &'a [ModuleItem], function_likes: &mut Vec<FunctionLike<'a>>) {
         for item in items {
