@@ -1,6 +1,6 @@
 pub mod analytics {
     use std::rc::Rc;
-    use swc_common::SourceMap;
+    use swc_common::{SourceMap, Span};
     use swc_ecma_ast::{BlockStmtOrExpr};
     use crate::analytics::report;
     use crate::common::function_like_enum::FunctionLike;
@@ -30,8 +30,4 @@ pub mod analytics {
         // This is a placeholder, the actual implementation will depend on how you want to score the function
         10
     }
-
-
-
-
 }
