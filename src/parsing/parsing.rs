@@ -8,29 +8,30 @@ pub mod parsing {
     use swc_common::input::StringInput;
     use swc_common::source_map::SourceMap;
     use swc_ecma_parser::{Parser, Syntax};
-    use crate::parsing::extract_functions;
-    use crate::analytics;
+    use swc_ecma_visit::VisitWith;
+    use crate::Metrics;
+    use crate::visitor::FunctionAnalysisVisitor;
 
 
-    pub fn process_input<P: AsRef<Path>>(path: P) {
+    pub fn process_input<P: AsRef<Path>>(path: P, thresholds: &Metrics) {
         let path = path.as_ref();
 
         if path == Path::new(".") {
             let current_dir = std::env::current_dir().expect("Failed to get current directory");
-            process_input(&current_dir);
+            process_input(&current_dir, &thresholds);
         } else if path.is_file() {
             if path.extension().map_or(false, |ext| ext == "js" || ext == "ts") {
-                _process_file(path);
+                _process_file(path, &thresholds);
             }
         } else if path.is_dir() {
             for entry in fs::read_dir(path).expect("Failed to read directory") {
                 let entry = entry.expect("Failed to read directory entry");
-                process_input(entry.path());
+                process_input(entry.path(), thresholds);
             }
         }
     }
 
-    fn _process_file<P: AsRef<Path>>(file_path: P) {
+    fn _process_file<P: AsRef<Path>>(file_path: P, thresholds: &Metrics) {
         let source_code = fs::read_to_string(&file_path).expect("Failed to read file");
 
         let source_map: Rc<SourceMap> = Rc::new(SourceMap::default());
@@ -57,12 +58,7 @@ pub mod parsing {
         // Parse the source code into an AST
         let module = parser.parse_module().expect("Failed to parse module");
 
-        // Extract functions from the module
-        let mut function_likes = Vec::new();
-        extract_functions(&module.body, &mut function_likes);
-        if function_likes.is_empty() {
-            return;
-        }
-        analytics::do_analytics(function_likes, &source_map);
+        let mut visitor = FunctionAnalysisVisitor::new(thresholds, source_map);
+        module.visit_with(&mut visitor);
     }
 }

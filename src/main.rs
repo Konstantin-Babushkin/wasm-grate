@@ -1,10 +1,11 @@
 extern crate clap;
 
 use clap::{Arg, ArgAction, Command};
+use crate::common::Metrics;
 
 mod parsing;
-mod analytics;
 mod common;
+mod visitor;
 
 fn main() {
     let cmd = Command::new("wasm-grate")
@@ -24,5 +25,7 @@ fn main() {
 
     let input_path: String = cmd.get_one::<String>("path").unwrap().to_string();
 
-    parsing::process_input(input_path);
+    let thresholds = Metrics::new();
+
+    parsing::process_input(input_path, &thresholds);
 }
