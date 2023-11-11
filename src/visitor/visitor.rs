@@ -1,28 +1,37 @@
 
 
 pub mod function_analysis_visitor {
-    use swc_ecma_ast::{ArrowExpr, ClassMethod, BlockStmt, Expr, BlockStmtOrExpr, FnDecl, FnExpr, Stmt};
+    use std::rc::Rc;
+    use swc_common::{SourceMap, Spanned};
+    use swc_ecma_ast::{ArrowExpr, BlockStmt, Expr, BlockStmtOrExpr, FnDecl, FnExpr, Stmt};
     use swc_ecma_visit::{Visit, VisitWith};
+    use crate::Metrics;
     use crate::visitor::loop_analysis::loop_analysis;
     use crate::visitor::cyclomatic_complexity::cyclomatic_complexity;
+    use crate::visitor::scoring::scoring::try_report_function;
+    use crate::visitor::string_counter::string_counter;
 
 
-    pub struct FunctionAnalysisVisitor {
+    pub struct FunctionAnalysisVisitor<'a> {
         pub cyclomatic_complexity: usize,
         pub current_loop_depth: usize,
         pub max_loop_depth: usize,
         pub arithmetic_operations: usize,
-        string_operations: usize,
+        pub string_operations: usize,
+        pub thresholds: &'a Metrics,
+        pub source_map: Rc<SourceMap>,
     }
 
-    impl FunctionAnalysisVisitor {
-        pub fn new() -> Self {
+    impl<'a> FunctionAnalysisVisitor<'a> {
+        pub fn new(thresholds: &'a Metrics, source_map: Rc<SourceMap>) -> Self {
             FunctionAnalysisVisitor {
-                cyclomatic_complexity: 0,
+                cyclomatic_complexity: 1,
                 current_loop_depth: 0,
                 max_loop_depth: 0,
                 arithmetic_operations: 0,
                 string_operations: 0,
+                thresholds,
+                source_map,
             }
         }
 
@@ -42,6 +51,7 @@ pub mod function_analysis_visitor {
 
         pub fn analyze_statement(&mut self, stmt: &Stmt) {
             cyclomatic_complexity::analyze_statement(stmt, &mut self.cyclomatic_complexity);
+            string_counter::analyze_statement(self, stmt);
 
             // Handle loops
             if let Some(loop_body) = loop_analysis::extract_loop_body(stmt) {
@@ -53,14 +63,12 @@ pub mod function_analysis_visitor {
 
         pub fn analyze_expression(&mut self, expr: &Expr) {
             cyclomatic_complexity::analyze_expression(self, expr);
-
+            string_counter::analyze_expression(self, expr);
             // Skip loop_analysis. No need to check the expression for loops
-
-
         }
     }
 
-    impl Visit for FunctionAnalysisVisitor {
+    impl<'a> Visit for FunctionAnalysisVisitor<'a> {
         fn visit_fn_decl(&mut self, n: &FnDecl) {
             self.reset_metrics();
 
@@ -69,11 +77,7 @@ pub mod function_analysis_visitor {
                 self.analyze_function_body(body);
             }
 
-            // After visiting the function, report the analysis results
-            // TODO threshold
-            println!("Function {}: Cyclomatic Complexity = {}, Loop Depth = {}, Arithmetic Operations = {}, String Operations = {}",
-                     n.ident, self.cyclomatic_complexity, self.max_loop_depth, self.arithmetic_operations, self.string_operations);
-
+            try_report_function(&self, n.span());
             n.visit_children_with(self);
         }
 
@@ -86,11 +90,7 @@ pub mod function_analysis_visitor {
                 }
             }
 
-            let expr_name = n.ident.as_ref().map(|ident| ident.sym.to_string());
-
-            println!("Function Expression {}: Cyclomatic Complexity = {}, Loop Depth = {}, Arithmetic Operations = {}, String Operations = {}",
-                     expr_name.unwrap_or_else(|| "Anonymous".to_string()), self.cyclomatic_complexity, self.max_loop_depth, self.arithmetic_operations, self.string_operations);
-
+            try_report_function(&self, n.span());
             n.visit_children_with(self);
         }
 
@@ -109,16 +109,7 @@ pub mod function_analysis_visitor {
                 }
             }
 
-            println!("Arrow Function: Cyclomatic Complexity = {}, Loop Depth = {}, Arithmetic Operations = {}, String Operations = {}",
-                     self.cyclomatic_complexity, self.max_loop_depth, self.arithmetic_operations, self.string_operations);
-
-            n.visit_children_with(self);
-        }
-
-        fn visit_class_method(&mut self, n: &ClassMethod) {
-            self.reset_metrics();
-            println!("Visited a class method with name {:?}", n.key);
-            // Perform your checks or call functions here...
+            try_report_function(&self, n.span());
             n.visit_children_with(self);
         }
     }

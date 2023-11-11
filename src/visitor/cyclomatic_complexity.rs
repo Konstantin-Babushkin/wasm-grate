@@ -45,8 +45,8 @@ pub mod cyclomatic_complexity {
                 visitor.analyze_expression(&cond_expr.cons);
                 visitor.analyze_expression(&cond_expr.alt);
             },
-            Expr::Paren(parenExpr) => {
-                visitor.analyze_expression(parenExpr.expr.unwrap_parens());
+            Expr::Paren(paren_expr) => {
+                visitor.analyze_expression(paren_expr.expr.unwrap_parens());
             }
             _ => {}
         }
