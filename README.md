@@ -51,19 +51,19 @@ For now it works only for:
 - function declarations
 ```Javascript
 function foo() {
-    console.log('hi');
+    console.log('function declaration');
 } 
 ```
 - expressions 
 ```Javascript
 const bar = function() {
-    console.log('hi');
+    console.log('function expression');
 }
 ```
 - arrow functions
 ```Javascript
 const foo = () => {
-    console.log('hi');
+    console.log('arrow function');
 } 
 ```
 
