@@ -8,8 +8,8 @@ pub mod parsing {
     use swc_common::input::StringInput;
     use swc_common::source_map::SourceMap;
     use swc_ecma_parser::{Parser, Syntax};
-    use crate::parsing::extract_functions;
-    use crate::analytics;
+    use swc_ecma_visit::VisitWith;
+    use crate::visitor::FunctionAnalysisVisitor;
 
 
     pub fn process_input<P: AsRef<Path>>(path: P) {
@@ -57,12 +57,7 @@ pub mod parsing {
         // Parse the source code into an AST
         let module = parser.parse_module().expect("Failed to parse module");
 
-        // Extract functions from the module
-        let mut function_likes = Vec::new();
-        extract_functions(&module.body, &mut function_likes);
-        if function_likes.is_empty() {
-            return;
-        }
-        analytics::do_analytics(function_likes, &source_map);
+        let mut visitor = FunctionAnalysisVisitor::new();
+        module.visit_with(&mut visitor);
     }
 }
