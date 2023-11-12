@@ -9,9 +9,9 @@ pub mod metrics {
     impl Metrics {
         pub fn new() -> Self {
             Metrics {
-                cyclomatic_complexity: 1,
+                cyclomatic_complexity: 3,
                 loop_depth: 1,
-                arithmetic_operations: 1,
+                arithmetic_operations: 3,
                 string_operations: 1,
             }
         }

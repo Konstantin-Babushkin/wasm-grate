@@ -6,6 +6,7 @@ mod cyclomatic_complexity;
 mod string_counter;
 mod report;
 mod scoring;
+mod max_scores;
 
 
 

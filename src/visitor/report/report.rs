@@ -1,9 +1,7 @@
 pub mod report {
-    use std::env;
-    use std::path::Path;
     use std::rc::Rc;
     use colored::{Color, Colorize};
-    use swc_common::{FileName, SourceMap, Span};
+    use swc_common::{SourceMap, Span};
 
     const CONCERN: usize = 3;
     const WARNING: usize = 5;
@@ -16,7 +14,6 @@ pub mod report {
     ) {
         let start_location = source_map.lookup_char_pos(span.lo());
 
-        // let file_name = _get_relative_path(&start_location.file.name);
         let file_name = &start_location.file.name.to_string();
 
         let source_code = &start_location.file.src;
@@ -68,25 +65,6 @@ pub mod report {
             _ if score >= WARNING => score_label.color(Color::BrightRed).to_string(),
             _ if score >= CONCERN => score_label.color(Color::Yellow).to_string(),
             _ => score_label,
-        }
-    }
-
-    fn _get_relative_path(file: &FileName) -> String {
-        let file_str = file.to_string();
-        if file_str.is_empty() {
-            return "Invalid or empty file name provided".to_string();
-        }
-
-        // Get the current working directory
-        let current_dir = match env::current_dir() {
-            Ok(dir) => dir,
-            Err(_) => return "Failed to get current directory".to_string(),
-        };
-
-        // Convert the file_name to a Path and make it relative
-        match Path::new(&file_str).strip_prefix(&current_dir) {
-            Ok(relative_path) => relative_path.display().to_string(),
-            Err(_) => file_str,
         }
     }
 }
